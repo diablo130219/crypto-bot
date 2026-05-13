@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kickora — Bolletta Pazza</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=kickora-premium-v9">
+</head>
+<body class="bolletta-page">
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Kickora" style="width:48px;height:48px;border-radius:14px;object-fit:cover;">
+      <div>
+        <strong>KICKORA</strong>
+        <span>BET</span>
+      </div>
+    </a>
+
+    <div class="bankroll-panel">
+      <div class="nav-label">Bankroll</div>
+      <form action="{{ url_for('salva_bankroll') }}" method="POST" class="bankroll-form">
+        <input type="number" name="capitale" value="{{ capitale }}" step="0.01" min="0" placeholder="Capitale €">
+        <input type="number" name="importo_fisso" value="{{ importo_fisso }}" step="0.01" min="0" placeholder="Importo bolletta €">
+        <button type="submit" class="ghost-btn full">💾 Salva</button>
+      </form>
+
+      <div class="bankroll-card">
+        <span>Capitale iniziale</span>
+        <strong>€{{ "%.2f"|format(capitale) }}</strong>
+        <span>Capitale attuale</span>
+        <strong>€{{ "%.2f"|format(capitale_attuale) }}</strong>
+        <span>% Presa</span>
+        <strong class="{% if presa_percent >= 50 %}roi-pos{% elif giocate > 0 %}roi-neg{% endif %}">{{ presa_percent }}%</strong>
+        <span>Vinte / Perse</span>
+        <strong class="profit-value">{{ vinte }} / {{ perse }}</strong>
+        <span>ROI Totale</span>
+        <strong class="{% if roi > 0 %}roi-pos{% elif roi < 0 %}roi-neg{% endif %}">{{ roi }}%</strong>
+        <span>Profitto</span>
+        <strong class="profit-value">€{{ "%.2f"|format(tot_profitto) }}</strong>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link"><span>⌁</span> Dashboard</a>
+      <a href="{{ url_for('doppie_page') }}" class="nav-link"><span>🎲</span> Sistema Doppie</a>
+      <a href="{{ url_for('bolletta_page') }}" class="nav-link active"><span>🎰</span> Bolletta Pazza</a>
+      <div class="nav-label">Strategie</div>
+      <a href="{{ url_for('index', strategy='GG') }}" class="nav-link"><span class="sport-dot green"></span><div>GG <small>{{ gg_count }} match</small></div></a>
+      <a href="{{ url_for('index', strategy='Over 2.5') }}" class="nav-link"><span class="sport-dot orange"></span><div>Over 2.5 <small>{{ over25_count }} match</small></div></a>
+      <a href="{{ url_for('index', strategy='Over 1.5') }}" class="nav-link"><span class="sport-dot blue"></span><div>Over 1.5 <small>{{ over15_count }} match</small></div></a>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar page-clean-topbar">
+      <div></div>
+      <div class="top-actions">
+        <form action="{{ url_for('genera_bolletta') }}" method="POST"><button type="submit" class="gen-btn">🔄 Genera automatica</button></form>
+        <form action="{{ url_for('svuota_bolletta') }}" method="POST"><button type="submit" class="danger-btn">Svuota</button></form>
+        <a href="{{ url_for('logout') }}" class="ghost-btn">Logout</a>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+
+    <section class="premium-section-hero hero-bolletta kickora-unified-hero">
+      <div class="hero-logo-zone">
+        <div class="hero-logo-ring"></div>
+        <img class="hero-big-logo" src="{{ url_for('static', filename='logo.png') }}" alt="Kickora">
+      </div>
+      <div class="hero-main-zone">
+        <span class="hero-kicker">Bolletta Pazza</span>
+        <h2 class="hero-title">Crea schedine<br>ad alto <span class="accent">potenziale AI.</span></h2>
+        <p>Modalità più rischiosa, più adrenalinica e più emozionante. Combina le selezioni migliori e controlla quota media, vincita potenziale e performance.</p>
+        <div class="hero-badges"><span class="hero-badge pink">AI VALUE</span><span class="hero-badge orange">ULTRA COMBO</span><span class="hero-badge pink">HIGH RISK</span></div>
+      </div>
+      <div class="hero-side-zone hero-bolletta-side">
+        
+        <article class="hero-side-card floating-card"><span>Eventi totali</span><strong>{{ bolletta|length }}</strong><small>nella bolletta</small></article>
+        <article class="hero-side-card floating-card"><span>Quota totale</span><strong>{{ quota_totale }}</strong><small>moltiplicatore</small></article>
+        <article class="hero-side-card floating-card"><span>Potenziale win</span><strong>€{{ "%.2f"|format(importo_fisso * quota_totale) }}</strong><small>vincita potenziale</small></article>
+      </div>
+    </section>
+
+
+    {% if bolletta %}
+    <section class="kpi-grid four">
+      <article class="kpi-card"><span>Partite selezionate</span><strong>{{ bolletta|length }}</strong><small>scelte manualmente</small></article>
+      <article class="kpi-card accent"><span>Quota Totale</span><strong>{{ quota_totale }}</strong><small>moltiplicatore multipla</small></article>
+      <article class="kpi-card"><span>Importo giocato</span><strong>€{{ "%.2f"|format(importo_fisso) }}</strong><small>modificabile dalla sidebar</small></article>
+      <article class="kpi-card accent"><span>Vincita potenziale</span><strong>€{{ "%.2f"|format(importo_fisso * quota_totale) }}</strong><small>se presa</small></article>
+    </section>
+
+    <section class="odds-table-card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Clicca sulla quota per modificarla</span>
+          <h3>Partite — {{ oggi }}</h3>
+        </div>
+        <span class="count-pill">{{ bolletta|length }} partite</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="odds-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ora</th>
+              <th>Campionato</th>
+              <th>Casa</th>
+              <th>Trasferta</th>
+              <th>Mercato</th>
+              <th>Quota</th>
+              <th>% Media</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in bolletta %}
+            <tr>
+              <td><strong>{{ loop.index }}</strong></td>
+              <td><strong>{{ p.match_time }}</strong></td>
+              <td>{{ p.championship }}</td>
+              <td class="team">{{ p.home_team }}</td>
+              <td>{{ p.away_team }}</td>
+              <td><span class="market-pill strat-pill">{{ p.strategy }}</span></td>
+              <td>
+                <span class="prob-pill quota-edit" onclick="editQuota({{ p.id }})" title="Clicca per modificare">{{ "%.2f"|format(p.odd or 0) }}</span>
+                <form id="qf-{{ p.id }}" action="{{ url_for('update_quota', match_id=p.id) }}" method="POST" class="inline-form">
+                  <input type="hidden" name="source" value="bolletta">
+                  <input type="number" id="qi-{{ p.id }}" name="quota" step="0.01" min="1" value="{{ p.odd }}"
+                    class="quota-input"
+                    onkeydown="if(event.key==='Enter'){this.form.submit()}"
+                    onblur="this.form.submit()">
+                </form>
+              </td>
+              <td><span class="stat-pill">{{ p.pct_media }}%</span></td>
+              <td>
+                <form action="{{ url_for('rimuovi_da_bolletta', match_id=p.id) }}" method="POST" class="inline-form">
+                  <button type="submit" class="del-btn" title="Rimuovi dalla bolletta">✕</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bet-slip-wide">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Multipla del giorno</span>
+          <h3>📋 {{ oggi }}</h3>
+        </div>
+        <div class="slip-summary">
+          <span>Quota Totale</span>
+          <strong>{{ quota_totale }}</strong>
+          <span>€{{ "%.2f"|format(importo_fisso) }} → €{{ "%.2f"|format(importo_fisso * quota_totale) }}</span>
+        </div>
+      </div>
+
+      <div class="slip-grid">
+        {% for p in bolletta %}
+        <article class="slip-match">
+          <div class="slip-top">
+            <span>{{ p.strategy }}</span>
+            <strong>{{ "%.2f"|format(p.odd or 0) }}</strong>
+          </div>
+          <h4>{{ p.home_team }}</h4>
+          <p>vs {{ p.away_team }}</p>
+          <small>{{ p.championship }} · {{ p.match_time }}</small>
+        </article>
+        {% endfor %}
+      </div>
+
+      <form action="{{ url_for('salva_bolletta') }}" method="POST" class="save-slip-form">
+        <input type="hidden" name="quota_totale" value="{{ quota_totale }}">
+        <input type="hidden" name="importo" value="{{ importo_fisso }}">
+        <input type="hidden" name="bankroll_pre" value="{{ capitale }}">
+        <input type="hidden" name="partite_json" value="{{ partite_json }}">
+        <button type="submit" class="success-btn full">💾 Salva Bolletta</button>
+      </form>
+    </section>
+    {% else %}
+    <section class="odds-table-card empty-main">
+      <div class="empty-state">
+        <strong>🎰 Bolletta vuota</strong>
+        <span>Vai negli elenchi GG / Over 2.5 / Over 1.5 e clicca <strong>➕ Aggiungi</strong> sulle partite che vuoi inserire.</span>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if storico %}
+    <section class="storico-card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Storico completo</span>
+          <h3>📅 Bollette Precedenti</h3>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="odds-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Importo</th>
+              <th>Quota</th>
+              <th>Profitto</th>
+              <th>Esito</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in storico %}
+            <tr>
+              <td><strong>{{ b.data }}</strong></td>
+              <td>€{{ "%.2f"|format(b.importo) }}</td>
+              <td><span class="prob-pill">{{ "%.2f"|format(b.quota_totale) }}</span></td>
+              <td>€{{ "%.2f"|format(b.profitto) }}</td>
+              <td>
+                <form action="{{ url_for('esito_bolletta', bolletta_id=b.id) }}" method="POST" class="esito-form">
+                  <select name="esito" onchange="this.form.submit()">
+                    <option value="pending" {% if b.esito == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="vinta" {% if b.esito == 'vinta' %}selected{% endif %}>Vinta</option>
+                    <option value="persa" {% if b.esito == 'persa' %}selected{% endif %}>Persa</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+    {% if storico %}
+    <section class="storico-card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Storico completo</span>
+          <h3>📅 Bollette salvate</h3>
+        </div>
+      </div>
+      <div class="saved-slips-list">
+        {% for b in storico %}
+        <article class="saved-slip-card">
+          <details>
+            <summary>
+              <div class="saved-slip-main">
+                <div>
+                  <span class="saved-date">{{ b.data }}</span>
+                  <strong>Bolletta #{{ b.id }}</strong>
+                  <small>{{ b.dettagli|length }} partite salvate</small>
+                </div>
+                <div class="saved-numbers">
+                  <span>Importo <b>€{{ "%.2f"|format(b.importo) }}</b></span>
+                  <span>Quota <b>{{ "%.2f"|format(b.quota_totale) }}</b></span>
+                  <span>Profitto <b>€{{ "%.2f"|format(b.profitto) }}</b></span>
+                </div>
+                <div class="saved-actions" onclick="event.stopPropagation()">
+                  <form action="{{ url_for('esito_bolletta', bolletta_id=b.id) }}" method="POST" class="saved-result-form">
+                    <select name="esito" onchange="this.form.submit()">
+                      <option value="pending" {% if b.esito == 'pending' %}selected{% endif %}>Pending</option>
+                      <option value="vinta" {% if b.esito == 'vinta' %}selected{% endif %}>Vinta</option>
+                      <option value="persa" {% if b.esito == 'persa' %}selected{% endif %}>Persa</option>
+                    </select>
+                  </form>
+
+                  <form action="{{ url_for('elimina_bolletta_salvata', bolletta_id=b.id) }}" method="POST"
+                        onsubmit="return confirm('Eliminare questa bolletta salvata?');">
+                    <button type="submit" class="delete-saved-btn">🗑 Elimina</button>
+                  </form>
+                </div>
+              </div>
+            </summary>
+            <div class="saved-slip-details">
+              <div class="saved-match-grid">
+                {% for p in b.dettagli %}
+                <div class="saved-match-card">
+                  <div class="saved-match-top"><span>{{ p.mercato }}</span><strong>{{ "%.2f"|format(p.quota or 0) }}</strong></div>
+                  <h4>{{ p.home }}</h4><p>vs {{ p.away }}</p>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </details>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+  </main>
+</div>
+
+<script>
+function editQuota(id) {
+  const input = document.getElementById('qi-' + id);
+  if (!input) return;
+  input.style.display = 'inline-block';
+  input.focus();
+  input.select();
+}
+</script>
+
+<script id="kickora-doppie-filter-reset-fix">
+(function(){
+  // Mantiene una copia stabile delle partite disponibili per i filtri strategia.
+  window.KICKORA_DOPPIE_FILTER_FIX = true;
+
+  function normalizeMarket(v){
+    return String(v || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function keepOriginalRows(){
+    document.querySelectorAll("[data-market], [data-strategy], .match-card, .fixture-card, .pick-card").forEach(function(el){
+      if (!el.dataset.originalVisible) el.dataset.originalVisible = "1";
+    });
+  }
+
+  function applyStrategyFilter(strategy){
+    keepOriginalRows();
+    var wanted = normalizeMarket(strategy);
+    document.querySelectorAll("[data-market], [data-strategy], .match-card, .fixture-card, .pick-card").forEach(function(el){
+      var market = normalizeMarket(el.dataset.market || el.dataset.strategy || el.getAttribute("data-market") || el.getAttribute("data-strategy") || el.textContent);
+      var show = wanted === "tutti" || wanted === "all" || wanted === "" || market.includes(wanted);
+      el.style.display = show ? "" : "none";
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-doppie-filter], .doppie-filter, .strategy-tab, .market-tab");
+    if (!btn) return;
+    var strategy = btn.dataset.doppieFilter || btn.dataset.strategy || btn.dataset.market || btn.textContent;
+    window.__kickoraLastDoppieFilter = strategy;
+    setTimeout(function(){ applyStrategyFilter(strategy); }, 0);
+  });
+
+  document.addEventListener("submit", function(e){
+    var form = e.target;
+    var text = (form.textContent || form.id || form.className || "").toLowerCase();
+    if (!text.includes("doppia") && !text.includes("crea")) return;
+    setTimeout(function(){
+      keepOriginalRows();
+      if (window.__kickoraLastDoppieFilter) applyStrategyFilter(window.__kickoraLastDoppieFilter);
+    }, 300);
+  });
+
+  document.addEventListener("DOMContentLoaded", keepOriginalRows);
+})();
+</script>
+
+</body>
+</html>

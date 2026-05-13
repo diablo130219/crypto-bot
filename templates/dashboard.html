@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kickora — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=kickora-dashboard-logo-v13">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Kickora" class="sidebar-logo-img">
+      <div>
+        <strong>KICKORA</strong>
+        <span>BET</span>
+      </div>
+    </a>
+
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-link active"><span>⌁</span> Dashboard</a>
+      <a href="{{ url_for('doppie_page') }}" class="nav-link"><span>🎲</span> Sistema Doppie</a>
+      <a href="{{ url_for('bolletta_page') }}" class="nav-link"><span>🎰</span> Bolletta Pazza</a>
+
+      <div class="nav-label">Strategie</div>
+
+      <a href="{{ url_for('index', strategy='GG') }}" class="nav-link">
+        <span class="sport-dot green"></span>
+        <div>GG <small>{{ gg_count }} match</small></div>
+      </a>
+      <a href="{{ url_for('index', strategy='Over 2.5') }}" class="nav-link">
+        <span class="sport-dot orange"></span>
+        <div>Over 2.5 <small>{{ over25_count }} match</small></div>
+      </a>
+      <a href="{{ url_for('index', strategy='Over 1.5') }}" class="nav-link">
+        <span class="sport-dot blue"></span>
+        <div>Over 1.5 <small>{{ over15_count }} match</small></div>
+      </a>
+    </nav>
+
+    {% include "_side_bolletta.html" %}
+
+    <div class="sidebar-ticket">
+      <span>Database</span>
+      <strong>{{ total_all }}</strong>
+      <small>partite totali</small>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar premium-topbar">
+      <div>
+        <span class="eyebrow">KICKORA AI CONTROL CENTER</span>
+        <h1>Predici. Combina. Domina.</h1>
+        <p>La tua centrale operativa per strategie, bollette e gestione bankroll.</p>
+      </div>
+      <a href="{{ url_for('logout') }}" class="ghost-btn">Logout</a>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <section class="dashboard-hero brand-hero-v13">
+      <div class="brand-orb-wrap">
+        <div class="brand-energy-ring"></div>
+        <img class="dashboard-main-logo" src="{{ url_for('static', filename='logo.png') }}" alt="Kickora logo">
+        <div class="orbit-dot dot-a"></div>
+        <div class="orbit-dot dot-b"></div>
+      </div>
+
+      <div class="hero-copy-v13">
+        <span class="status-chip pulse-chip">KICKORA BET ENGINE</span>
+        <h2><span>Predici.</span><span>Combina.</span><span>Domina.</span></h2>
+        <p>Analizza le partite, costruisci doppie e bollette, controlla stake e valore con una dashboard più immediata.</p>
+        <div class="hero-action-row">
+          <a class="hero-primary-btn" href="{{ url_for('doppie_page') }}">🎲 Crea Doppia</a>
+          <a class="hero-secondary-btn" href="{{ url_for('bolletta_page') }}">🎰 Bolletta Pazza</a>
+        </div>
+      </div>
+
+      <div class="hero-ai-cards-v13">
+        <article><span>AI VALUE</span><strong>{{ total_all }}</strong><small>match nel database</small></article>
+        <article><span>OGGI</span><strong>{{ today_count }}</strong><small>partite in programma</small></article>
+        <article><span>7DAYS RADAR</span><strong>{{ next7_count }}</strong><small>prossimi 7 giorni</small></article>
+      </div>
+    </section>
+
+    <section class="kpi-grid four">
+      <article class="kpi-card"><span>Totale Database</span><strong>{{ total_all }}</strong><small>partite totali</small></article>
+      <article class="kpi-card"><span>Oggi</span><strong>{{ today_count }}</strong><small>programmate oggi</small></article>
+      <article class="kpi-card"><span>Prossimi 3 Giorni</span><strong>{{ next3_count }}</strong><small>in programma</small></article>
+      <article class="kpi-card accent"><span>Prossimi 7 Giorni</span><strong>{{ next7_count }}</strong><small>in programma</small></article>
+    </section>
+
+    <section class="strategy-summary">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Overview</span>
+          <h3>Riepilogo strategie</h3>
+        </div>
+      </div>
+      <div class="summary-grid">
+        <a href="{{ url_for('index', strategy='GG') }}" class="summary-card">
+          <span>GG</span>
+          <strong>{{ strategy_counts["GG"] }}</strong>
+          <small>Quota media: {{ avg_odds["GG"] if avg_odds["GG"] > 0 else "—" }}</small>
+        </a>
+        <a href="{{ url_for('index', strategy='Over 2.5') }}" class="summary-card">
+          <span>Over 2.5</span>
+          <strong>{{ strategy_counts["Over 2.5"] }}</strong>
+          <small>Quota media: {{ avg_odds["Over 2.5"] if avg_odds["Over 2.5"] > 0 else "—" }}</small>
+        </a>
+        <a href="{{ url_for('index', strategy='Over 1.5') }}" class="summary-card">
+          <span>Over 1.5</span>
+          <strong>{{ strategy_counts["Over 1.5"] }}</strong>
+          <small>Quota media: {{ avg_odds["Over 1.5"] if avg_odds["Over 1.5"] > 0 else "—" }}</small>
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script id="kickora-doppie-filter-reset-fix">
+(function(){
+  // Mantiene una copia stabile delle partite disponibili per i filtri strategia.
+  window.KICKORA_DOPPIE_FILTER_FIX = true;
+
+  function normalizeMarket(v){
+    return String(v || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function keepOriginalRows(){
+    document.querySelectorAll("[data-market], [data-strategy], .match-card, .fixture-card, .pick-card").forEach(function(el){
+      if (!el.dataset.originalVisible) el.dataset.originalVisible = "1";
+    });
+  }
+
+  function applyStrategyFilter(strategy){
+    keepOriginalRows();
+    var wanted = normalizeMarket(strategy);
+    document.querySelectorAll("[data-market], [data-strategy], .match-card, .fixture-card, .pick-card").forEach(function(el){
+      var market = normalizeMarket(el.dataset.market || el.dataset.strategy || el.getAttribute("data-market") || el.getAttribute("data-strategy") || el.textContent);
+      var show = wanted === "tutti" || wanted === "all" || wanted === "" || market.includes(wanted);
+      el.style.display = show ? "" : "none";
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-doppie-filter], .doppie-filter, .strategy-tab, .market-tab");
+    if (!btn) return;
+    var strategy = btn.dataset.doppieFilter || btn.dataset.strategy || btn.dataset.market || btn.textContent;
+    window.__kickoraLastDoppieFilter = strategy;
+    setTimeout(function(){ applyStrategyFilter(strategy); }, 0);
+  });
+
+  document.addEventListener("submit", function(e){
+    var form = e.target;
+    var text = (form.textContent || form.id || form.className || "").toLowerCase();
+    if (!text.includes("doppia") && !text.includes("crea")) return;
+    setTimeout(function(){
+      keepOriginalRows();
+      if (window.__kickoraLastDoppieFilter) applyStrategyFilter(window.__kickoraLastDoppieFilter);
+    }, 300);
+  });
+
+  document.addEventListener("DOMContentLoaded", keepOriginalRows);
+})();
+</script>
+
+</body>
+</html>
